@@ -1,0 +1,25 @@
+%h2 Pie Charts
+
+%ul{data: {toggle: 'snappy-pie', colors: colors, colors_cycle: 'true'}}
+  - percentages.each do |percentage|
+    %li= percentage
+
+%ul{data: {toggle: 'snappy-pie', colors: colors, colors_cycle: 'true', theme: 'sun'}}
+  - percentages.each do |percentage|
+    %li= percentage
+
+%ul{data: {toggle: 'snappy-pie', colors: colors, colors_cycle: 'true', theme: 'bluered'}}
+  - percentages.each do |percentage|
+    %li= percentage
+
+%ul{data: {toggle: 'snappy-pie', colors: colors, colors_cycle: 'true', theme: 'contrast'}}
+  - percentages.each do |percentage|
+    %li= percentage
+
+
+%h2 Color mixing
+
+.color-box-wrapper{data: {color_from: '#0B486B', color_to: 'CFF09E', steps: 11}}
+.color-box-wrapper{data: {color_from: '#f91700', color_to: 'ffb400', steps: 11}}
+.color-box-wrapper{data: {color_from: '#12476e', color_to: 'ff0000', steps: 11}}
+.color-box-wrapper{data: {color_from: '#00ff2a', color_to: 'ff0000', steps: 11}}
