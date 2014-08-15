@@ -19,10 +19,12 @@ class @SnappyPie
       opacityEnd:             0
       circleOffset:           40
       background:             'transparent'
-      theme:                  'bluegreen'
+      colorTheme:                  'bluegreen'
       colors:                 null
       colorsSeparator:        ','
       colorsCycle:            false
+      startColor:             null
+      endColor:               null
       percentage:             true
       percentageSignificance: 0
       percentageCutoff:       5
@@ -39,7 +41,7 @@ class @SnappyPie
           @options[key] = value
 
     @colors =
-      bluegreen:  ['0B486B', 'CFF09E']
+      bluegreen:  ['0b486b', 'cff09e']
       sun:        ['f91700', 'ffb400']
       bluered:    ['ff0000', '12476e']
       contrast:   ['ff0000', '00ff2a']
@@ -140,8 +142,11 @@ class @SnappyPie
       index = index % @options.colors.length if @options.colorsCycle
       @options.colors[index]
     else
-      @colorStart = new Color {hex: @colors[@options.theme][0]}
-      @colorEnd = new Color {hex: @colors[@options.theme][1]}
+      startColor  = if @options.startColor? then @options.startColor  else @colors[@options.colorTheme][0]
+      endColor    = if @options.endColor?   then @options.endColor    else @colors[@options.colorTheme][1]
+
+      @colorStart = new Color {hex: startColor}
+      @colorEnd =   new Color {hex: endColor}
       newColor = @colorStart.mixWith @colorEnd, index / (@areas.length - 1)
       newColor.toRGBstring()
 

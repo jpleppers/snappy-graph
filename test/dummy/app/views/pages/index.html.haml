@@ -1,43 +1,42 @@
 %h2 Pie Charts
 
 
-%ul{data: {toggle: 'snappy-pie', animation: 'swing', theme: 'bluegreen', duration: 500, background: 'whitesmoke'}}
+%ul{data: {toggle: 'snappy-pie', animation: 'swing', color_theme: 'bluegreen', duration: 500, background: 'whitesmoke'}}
   - percentages(9).each do |percentage|
     %li= percentage
 
-%dl{data: {toggle: 'snappy-pie', theme: 'sun', percentage: 'false', background: 'whitesmoke', sort: 'false'}}
+%dl{data: {toggle: 'snappy-pie', color_theme: 'sun', percentage: 'false', background: 'whitesmoke', sort: 'false'}}
   - percentages.each do |percentage|
     %dt= random_name
     %dd= percentage
 
-- if false
-  %ul{data: {toggle: 'snappy-pie', animation: 'grow', theme: 'bluered'}}
-    - percentages.each do |percentage|
-      %li= percentage
+%ul{data: {toggle: 'snappy-pie', animation: 'grow', color_theme: 'bluered'}}
+  - percentages.each do |percentage|
+    %li= percentage
 
-  %ul{data: {toggle: 'snappy-pie', theme: 'contrast'}}
-    - percentages.each do |percentage|
-      %li= percentage
+%ul{data: {toggle: 'snappy-pie', color_theme: 'contrast'}}
+  - percentages.each do |percentage|
+    %li= percentage
 
-  %ul{data: {toggle: 'snappy-pie', colors: colors, colors_cycle: 'true'}}
-    - percentages.each do |percentage|
-      %li= percentage
+%ul{data: {toggle: 'snappy-pie', colors: colors, colors_cycle: 'true'}}
+  - percentages.each do |percentage|
+    %li= percentage
 
-  %h2 CSV
+%h2 CSV
 
-  %table{data: {toggle: 'snappy-graph'}}
-    - @heigths.each_with_index do |row, index|
-      %tr
-        - if index == 0
-          - row.each do |cell|
-            %th= cell
-        - else
-          - row.each do |cell|
-            %td= cell
+%table{data: {toggle: 'snappy-graph'}}
+  - @heigths.each_with_index do |row, index|
+    %tr
+      - if index == 0
+        - row.each do |cell|
+          %th= cell
+      - else
+        - row.each do |cell|
+          %td= cell
 
-  %h2 Color mixing
+%h2 Color mixing
 
-  .color-box-wrapper{data: {color_from: '#0B486B', color_to: 'CFF09E', steps: 11}}
-  .color-box-wrapper{data: {color_from: '#f91700', color_to: 'ffb400', steps: 11}}
-  .color-box-wrapper{data: {color_from: '#12476e', color_to: 'ff0000', steps: 11}}
-  .color-box-wrapper{data: {color_from: '#00ff2a', color_to: 'ff0000', steps: 11}}
+.color-box-wrapper{data: {color_from: '#0B486B', color_to: 'CFF09E', steps: 11}}
+.color-box-wrapper{data: {color_from: '#f91700', color_to: 'ffb400', steps: 11}}
+.color-box-wrapper{data: {color_from: '#12476e', color_to: 'ff0000', steps: 11}}
+.color-box-wrapper{data: {color_from: '#00ff2a', color_to: 'ff0000', steps: 11}}
