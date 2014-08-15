@@ -1,0 +1,27 @@
+.snappy-pie
+  .snappy-piece
+    &:hover, &.hover
+      .snappy-pie-hover-path, .snappy-pie-textbox
+        display: block
+
+    text
+      font-size: 13px
+
+    .snappy-pie-hover-path
+      display: none
+
+    .snappy-pie-textbox
+      display: none
+
+      rect
+        border: 1px solid rgba(black, 0.6)
+        fill: rgba(white, 0.9)
+
+    > text
+      text-shadow: 1px 1px black
+      fill: white
+
+  .snappy-legend
+    text
+      font-size: 13px
+      text-shadow: 1px 1px white

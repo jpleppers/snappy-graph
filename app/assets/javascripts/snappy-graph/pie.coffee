@@ -5,20 +5,31 @@ class @SnappyPie
     window.snappyPies++
 
     defaults =
-      size:             400
-      sort:             true
-      strokeWidth:      1
-      strokeOpacity:    0.5
-      animate:          false
-      animationOffset:  0.1
-      animationStart:   0.6
-      duration:         800
-      circleOffset:     40
-      background:       'whitesmoke'
-      theme:            'bluegreen'
-      colors:           null
-      colorsSeparator:  ','
-      colorsCycle:       false
+      size:                   400
+      sort:                   true
+      strokeWidth:            1
+      strokeOpacity:          0.5
+      hoverStroke:            5
+      hoverOpacity:           0.5
+      animation:              null
+      animationOffset:        0.1
+      animationStart:         0.4
+      duration:               800
+      opacityStart:           0
+      opacityEnd:             0
+      circleOffset:           40
+      background:             'transparent'
+      theme:                  'bluegreen'
+      colors:                 null
+      colorsSeparator:        ','
+      colorsCycle:            false
+      percentage:             true
+      percentageSignificance: 0
+      percentageCutoff:       5
+      textboxPadding:         5
+      legend:                 true
+      legendLineheight:       20
+      legendPadding:          5
 
     for key, value of defaults
       unless @options[key]
@@ -27,7 +38,6 @@ class @SnappyPie
         else
           @options[key] = value
 
-    @pieces = []
     @colors =
       bluegreen:  ['0B486B', 'CFF09E']
       sun:        ['f91700', 'ffb400']
@@ -39,34 +49,90 @@ class @SnappyPie
     else
       @options.colors = []
 
-    tagStyle = ["width:#{@options.size}px", "height: #{@options.size}px", "line-height: #{@options.size}px"]
+    @svgWidth = if @options.legend then @options.size * 1.5 else @options.size
+    tagStyle = ["width:#{@svgWidth}px", "height: #{@options.size}px", "line-height: #{@options.size}px"]
 
-
+    @total = 0
     @center = @options.size / 2
-    @radius = @options.size / 2 - @options.circleOffset - @options.strokeWidth
+    @radius = @options.size / 2 - @options.circleOffset - @options.strokeWidth - @options.hoverStroke
 
-    @svgContainer = $("<svg id='#{@pieId}' class='snappy-pie' style='#{tagStyle.join('; ')}' viewBox='0 0 #{@options.size} #{@options.size}'>")
+    @svgContainer = $("<svg id='#{@pieId}' class='snappy-pie' style='#{tagStyle.join('; ')}' viewBox='0 0 #{@svgWidth} #{@options.size}'>")
     @element.after @svgContainer
     @snap = Snap("##{@pieId}")
-    @background = @snap.rect(0,0 , @options.size, @options.size).attr({fill: @options.background}) if @options.background?
+    @background = @snap.rect(0,0 , @svgWidth, @options.size).attr({fill: @options.background}) if @options.background?
+    @pieces = @snap.g().attr('class', 'snappy-pieces')
 
-    values = []
-    $('li', @element).each (-> values.push parseInt($(this).html()))
-    @createAreas values
+    if @element.is('ul')
+      @createAreasFromList()
+    else if @element.is('dl')
+      @createAreasFromDefinitionList()
+
     @draw()
     @element.hide()
 
-  createAreas: (values) ->
-    total = 0
-    values.sort((a,b)-> b - a) if @options.sort
-    total += value for value in values
+    @svgContainer.on 'mouseover', '.snappy-piece', (event) =>
+      $piece = $(event.currentTarget)
+      $piece.appendTo $piece.parent()
+
+    @svgContainer.on 'mouseover', '.snappy-legend [data-value-index]', (event) =>
+      $legend = $(event.currentTarget)
+
+      $('.snappy-pieces [data-value-index]', @svgContainer).attr({class: 'snappy-piece'})
+      $(".snappy-pieces [data-value-index=#{$legend.data('value-index')}]", @svgContainer).attr({class: 'snappy-piece hover'})
+
+    @svgContainer.on 'mouseout', '.snappy-legend [data-value-index]', (event) =>
+      $legend = $(event.currentTarget)
+      $(".snappy-pieces [data-value-index=#{$legend.data('value-index')}]", @svgContainer).attr({class: 'snappy-piece'})
+
+
+  valueFromElement: (el) ->
+    parseInt $(el).text()
+
+  createAreasFromList: ->
     @values = []
+    $('li', @element).each (index, el) =>
+      @values.push {value: @valueFromElement(el)}
+
+    @sortAreas()
+    @createAreas()
+
+  createAreasFromDefinitionList: ->
+    @values = []
+    label = ''
+    value = ''
+
+    $('> *', @element).each (index, el) =>
+      $el = $(el)
+      if $el.is('dt')
+        label = $el.text()
+      else if $el.is('dd')
+        value = @valueFromElement(el)
+
+      if label? && label != '' && value? && value != ''
+        @values.push {label: label, value: value}
+        label = ''
+        value = ''
+
+    @sortAreas()
+    @createAreas()
+
+  sortAreas: ->
+    @values.sort((a,b)-> b.value - a.value) if @options.sort
+
+  createAreas: () ->
+    @total = 0
+    @total += value.value for value in @values
+    @areas = []
 
     previous = 0
-    for value in values
+    for value in @values
       start = previous
-      end = previous + (value * 360 / total)
-      @values.push {start: start, end: end}
+      end = previous + (value.value * 360 / @total)
+      @areas.push
+        label: value.label
+        value: value.value
+        start: start
+        end: end
       previous = end
 
   color: (index) ->
@@ -76,23 +142,95 @@ class @SnappyPie
     else
       @colorStart = new Color {hex: @colors[@options.theme][0]}
       @colorEnd = new Color {hex: @colors[@options.theme][1]}
-      newColor = @colorStart.mixWith @colorEnd, index / (@values.length - 1)
+      newColor = @colorStart.mixWith @colorEnd, index / (@areas.length - 1)
       newColor.toRGBstring()
 
   draw: ->
-    if @options.animate
-      offset = @radius * @options.animationOffset
-      Snap.animate @radius * @options.animationStart, (@radius + @values.length * offset), ((radius) => @drawPieces(radius, offset)), @options.duration, mina.easein
-    else
-      @drawPieces()
+    switch @options.animation
+      when 'grow'
+        offset = @radius * @options.animationOffset
+        start = @radius * @options.animationStart
+        end = (@radius + @areas.length * offset)
 
-  drawPieces: (radius, offset = 0) ->
-    radius = @radius unless radius?
+        Snap.animate start, end, ((i) => @drawPieces({radius: i, offset: offset})), @options.duration, mina.easein
+      when 'swing'
+        Snap.animate 0, 1, ((i) => @drawPieces({radialMultiplier: i})), @options.duration, mina.easein
+      else
+        @drawPieces()
 
-    $('.snappy-pie-path', @svgContainer).remove()
-    for value, index in @values
-      normRadius = Math.min(Math.max(radius - (index * offset), 0), @radius)
-      @pieces[index] = @piece(value.start, value.end, normRadius).attr(@appearance(index))
+    @drawLegend() if @options.legend
+
+
+  drawPieces: (options={}) ->
+    radius = options.radius || @radius
+    offset = options.offset || 0
+    radialMultiplier = options.radialMultiplier || 1
+
+    $('.snappy-piece', @svgContainer).remove()
+
+    for value, index in @areas
+      startDegree = value.start * radialMultiplier
+      endDegree = value.end * radialMultiplier
+      midDegree = endDegree - (endDegree - startDegree) / 2
+      normRadius = $.minMax(0, radius - (index * offset), @radius)
+      percentage = (value.value / @total * 100).toFixed(@options.percentageSignificance)
+
+      textPosition = @degreeToCoords midDegree, normRadius / 1.4
+      textboxPosition = @degreeToCoords midDegree, normRadius
+
+      piece = @snap.g().attr({class: 'snappy-piece', 'data-value-index': index})
+
+      # Actual pie piece
+      piece.add @piece(startDegree, endDegree, normRadius).attr(@appearance(index))
+
+      # Similar but slightly larger pie piece used on hover
+      if @options.hoverStroke
+        piece.add @piece(startDegree, endDegree, normRadius + @options.hoverStroke).attr
+          fill: @color(index)
+          fillOpacity: @options.hoverOpacity
+          class: 'snappy-pie-hover-path'
+
+      # Pie piece value label
+      if percentage >= @options.percentageCutoff
+        text = if @options.percentage then "#{percentage}%" else value.value
+        piece.add @snap.text(textPosition.x, textPosition.y, text).attr({style: 'text-anchor: middle'})
+
+      # textbox
+      piece.add @drawTextbox(value.label, midDegree, normRadius) if value.label? && value.label? != ''
+
+      @pieces.add piece
+
+  drawTextbox: (text, degree, rad) ->
+    textboxPosition = @degreeToCoords degree, rad
+    textboxText = @snap.text(textboxPosition.x, textboxPosition.y, text).attr({style: 'alignment-baseline: hanging; text-anchor: middle'})
+    bbox = textboxText.getBBox()
+
+    dimensions =
+      width:  bbox.width  + 2 * @options.textboxPadding
+      height: bbox.height + 2 * @options.textboxPadding
+      x: bbox.x - @options.textboxPadding
+      y: bbox.y - @options.textboxPadding
+    attrs =
+      class: 'snappy-pie-textbox'
+
+    if dimensions.x < 0
+      attrs.transform = "tranlate(#{dimensions.x * -1})"
+    else if (dimensions.x + dimensions.width) > @svgWidth
+      attrs.transform = "tranlate(#{( @svgWidth - dimensions.x - dimensions.width)})"
+
+    box = @snap.rect(dimensions.x, dimensions.y, dimensions.width, dimensions.height)
+    @snap.g(box, textboxText).attr(attrs)
+
+  drawLegend: ->
+    legend = @snap.g().attr('class', 'snappy-legend')
+    for value, index in @areas
+      yPos =  index * (@options.legendLineheight + @options.legendPadding)
+      colorBox = @snap.rect(@options.size, yPos, @options.legendLineheight, @options.legendLineheight).attr({fill: @color(index)})
+      text = @snap.text(@options.size + @options.legendLineheight + @options.legendPadding, yPos + @options.legendLineheight / 2, value.label).attr({style: 'alignment-baseline: middle'})
+      legend.add @snap.g(colorBox, text).attr('data-value-index': index)
+
+    legend.attr({transform: "tranlate(0, #{(@options.size - legend.getBBox().height) / 2 }})"})
+
 
   appearance: (index = 0) ->
     fillColor = @color(index)
@@ -102,7 +240,6 @@ class @SnappyPie
     strokeWidth:    @options.strokeWidth
     strokeOpacity:  @options.strokeOpacity
     class:          'snappy-pie-path'
-
 
   moveTo: (x,y, relative = false) ->
     [(if relative then 'm' else 'M'), x, y].join(' ')
@@ -116,7 +253,7 @@ class @SnappyPie
 
   degreeToCoords: (degree, radius = @radius) ->
     normDegree = Math.PI * (degree + 270) / 180
-    {x: (@center + radius * Math.cos(normDegree)).toFixed(2), y: (@center + radius * Math.sin(normDegree)).toFixed(2)}
+    {x: (@center + radius * Math.cos(normDegree)), y: (@center + radius * Math.sin(normDegree))}
 
   piece: (startDegree, endDegree, radius = @radius) ->
     startCoords = @degreeToCoords startDegree, radius
@@ -136,10 +273,3 @@ class @SnappyPie
       arc.toString(),
       @lineTo(@center, @center)
     ]
-
-
-
-$ ->
-  $('[data-toggle=snappy-pie]').each ->
-    $this = $(this)
-    $this.data 'snappy-pie', new SnappyPie($this)
