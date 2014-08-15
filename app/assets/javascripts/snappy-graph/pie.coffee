@@ -1,8 +1,13 @@
+window.snappyPie =
+  themes: {}
+  count: 1
+
+window.addSnappyPieTheme = (name, options = {}) -> window.snappyPie.themes[name] = options
+
 class @SnappyPie
   constructor: (@element, @options = {}) ->
-    window.snappyPies = 1 unless window.snappyPies
-    @pieId = "snappy-pie-#{window.snappyPies}"
-    window.snappyPies++
+    @pieId = "snappy-pie-#{window.snappyPie.count}"
+    window.snappyPie.count++
 
     defaults =
       size:                   400
@@ -19,7 +24,7 @@ class @SnappyPie
       opacityEnd:             0
       circleOffset:           40
       background:             'transparent'
-      colorTheme:                  'bluegreen'
+      colorTheme:             'bluegreen'
       colors:                 null
       colorsSeparator:        ','
       colorsCycle:            false
@@ -33,10 +38,15 @@ class @SnappyPie
       legendLineheight:       20
       legendPadding:          5
 
+    @options.theme ||= @element.data('theme')
+
     for key, value of defaults
+      # Dont set if it has already been set in options
       unless @options[key]
         if @element.data(key)?
           @options[key] = @element.data(key)
+        else if window.snappyPie.themes[@options.theme]? && window.snappyPie.themes[@options.theme][key]?
+          @options[key] = window.snappyPie.themes[@options.theme][key]
         else
           @options[key] = value
 
@@ -165,7 +175,6 @@ class @SnappyPie
 
     @drawLegend() if @options.legend
 
-
   drawPieces: (options={}) ->
     radius = options.radius || @radius
     offset = options.offset || 0
@@ -177,7 +186,7 @@ class @SnappyPie
       startDegree = value.start * radialMultiplier
       endDegree = value.end * radialMultiplier
       midDegree = endDegree - (endDegree - startDegree) / 2
-      normRadius = $.minMax(0, radius - (index * offset), @radius)
+      normRadius = @minMax(0, radius - (index * offset), @radius)
       percentage = (value.value / @total * 100).toFixed(@options.percentageSignificance)
 
       textPosition = @degreeToCoords midDegree, normRadius / 1.4
@@ -200,7 +209,7 @@ class @SnappyPie
         text = if @options.percentage then "#{percentage}%" else value.value
         piece.add @snap.text(textPosition.x, textPosition.y, text).attr({style: 'text-anchor: middle'})
 
-      # textbox
+      # Draw textbox
       piece.add @drawTextbox(value.label, midDegree, normRadius) if value.label? && value.label? != ''
 
       @pieces.add piece
@@ -219,9 +228,9 @@ class @SnappyPie
       class: 'snappy-pie-textbox'
 
     if dimensions.x < 0
-      attrs.transform = "tranlate(#{dimensions.x * -1})"
+      attrs.transform = "translate(#{dimensions.x * -1})"
     else if (dimensions.x + dimensions.width) > @svgWidth
-      attrs.transform = "tranlate(#{( @svgWidth - dimensions.x - dimensions.width)})"
+      attrs.transform = "translate(#{( @svgWidth - dimensions.x - dimensions.width)})"
 
     box = @snap.rect(dimensions.x, dimensions.y, dimensions.width, dimensions.height)
     @snap.g(box, textboxText).attr(attrs)
@@ -231,10 +240,10 @@ class @SnappyPie
     for value, index in @areas
       yPos =  index * (@options.legendLineheight + @options.legendPadding)
       colorBox = @snap.rect(@options.size, yPos, @options.legendLineheight, @options.legendLineheight).attr({fill: @color(index)})
-      text = @snap.text(@options.size + @options.legendLineheight + @options.legendPadding, yPos + @options.legendLineheight / 2, value.label).attr({style: 'alignment-baseline: middle'})
+      text = @snap.text(@options.size + @options.legendLineheight + @options.legendPadding, yPos + @options.legendLineheight / 2, value.label || value.value).attr({style: 'alignment-baseline: middle'})
       legend.add @snap.g(colorBox, text).attr('data-value-index': index)
 
-    legend.attr({transform: "tranlate(0, #{(@options.size - legend.getBBox().height) / 2 }})"})
+    legend.attr({transform: "translate(0, #{(@options.size - legend.getBBox().height) / 2 }})"})
 
 
   appearance: (index = 0) ->
@@ -255,6 +264,9 @@ class @SnappyPie
   path: (commands = []) ->
     commands.push 'Z'
     @snap.path commands.join(' ')
+
+  minMax: (min, max, value) ->
+    Math.min(Math.max(value, min), max)
 
   degreeToCoords: (degree, radius = @radius) ->
     normDegree = Math.PI * (degree + 270) / 180

@@ -16,9 +16,9 @@ class @Color
   fromHexString: (hexString) ->
     hexString = hexString.replace '#', ''
 
-    @r = $.hexToNumber(hexString.substr(0,2))
-    @g = $.hexToNumber(hexString.substr(2,2))
-    @b = $.hexToNumber(hexString.substr(4,2))
+    @r = @hexToNumber(hexString.substr(0,2))
+    @g = @hexToNumber(hexString.substr(2,2))
+    @b = @hexToNumber(hexString.substr(4,2))
 
   toRGB: (recalculate = false) ->
     @CMYKtoRGB() if !(@r? && @g? && @b?) || recalculate
