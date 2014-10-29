@@ -6,7 +6,10 @@
 
 %dl{data: {toggle: 'snappy-pie', color_theme: 'sun', percentage: 'false', background: 'whitesmoke', sort: 'false'}}
   - percentages.each do |percentage|
-    %dt= random_name
+    %dt
+      = random_name
+      ==  -
+      = Faker::Lorem.sentence
     %dd= percentage
 
 %ul{data: {toggle: 'snappy-pie', animation: 'grow', color_theme: 'bluered'}}

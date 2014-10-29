@@ -11,6 +11,7 @@ class @SnappyPie
 
     defaults =
       size:                   400
+      width:                  '100%'
       sort:                   true
       strokeWidth:            1
       strokeOpacity:          0.5
@@ -61,17 +62,18 @@ class @SnappyPie
     else
       @options.colors = []
 
-    @svgWidth = if @options.legend then @options.size * 1.5 else @options.size
-    tagStyle = ["width:#{@svgWidth}px", "height: #{@options.size}px", "line-height: #{@options.size}px"]
+    tagStyle = ["width:#{@options.width}#{if typeof(@options.width) == 'number' then 'px' else ''}", "height: #{@options.size}px", (if @options.background? then "background-color: #{@options.background}" else '') ]
 
     @total = 0
     @center = @options.size / 2
     @radius = @options.size / 2 - @options.circleOffset - @options.strokeWidth - @options.hoverStroke
 
-    @svgContainer = $("<svg id='#{@pieId}' class='snappy-pie' style='#{tagStyle.join('; ')}' viewBox='0 0 #{@svgWidth} #{@options.size}'>")
+    @svgContainer = $("<svg id='#{@pieId}' class='snappy-pie' style='#{tagStyle.join('; ')}' viewBox='0 0 1 #{@options.size}' preserveAspectRatio='xMinYMin'>")
     @element.after @svgContainer
     @snap = Snap("##{@pieId}")
-    @background = @snap.rect(0,0 , @svgWidth, @options.size).attr({fill: @options.background}) if @options.background?
+    # @background = @snap.rect(0,0 , @options.width, @options.size).attr({fill: @options.background}) if @options.background?
+
+    @legend = @snap.g().attr('class', 'snappy-legend') if @options.legend
     @pieces = @snap.g().attr('class', 'snappy-pieces')
 
     if @element.is('ul')
@@ -82,20 +84,33 @@ class @SnappyPie
     @draw()
     @element.hide()
 
+    @svgContainer.on 'highlight', (event, indexOfPiece) =>
+      console.log  indexOfPiece
+      @highlightPiece indexOfPiece
+
     @svgContainer.on 'mouseover', '.snappy-piece', (event) =>
+      # Move piece to bottom
       $piece = $(event.currentTarget)
-      $piece.appendTo $piece.parent()
+      @highlightPiece $piece.data('value-index')
 
     @svgContainer.on 'mouseover', '.snappy-legend [data-value-index]', (event) =>
       $legend = $(event.currentTarget)
 
-      $('.snappy-pieces [data-value-index]', @svgContainer).attr({class: 'snappy-piece'})
-      $(".snappy-pieces [data-value-index=#{$legend.data('value-index')}]", @svgContainer).attr({class: 'snappy-piece hover'})
+      # Set hover and move piece to bottom
+      @highlightPiece $legend.data('value-index')
 
     @svgContainer.on 'mouseout', '.snappy-legend [data-value-index]', (event) =>
       $legend = $(event.currentTarget)
       $(".snappy-pieces [data-value-index=#{$legend.data('value-index')}]", @svgContainer).attr({class: 'snappy-piece'})
 
+  highlightPiece: (index) ->
+    @removeHighlights()
+    $piece = $(".snappy-pieces [data-value-index=#{index}]", @svgContainer)
+    $piece.attr({class: 'snappy-piece hover'})
+    $piece.appendTo $piece.parent()
+
+  removeHighlights: ->
+    $('.snappy-pieces [data-value-index]', @svgContainer).attr({class: 'snappy-piece'})
 
   valueFromElement: (el) ->
     parseInt $(el).text()
@@ -229,21 +244,20 @@ class @SnappyPie
 
     if dimensions.x < 0
       attrs.transform = "translate(#{dimensions.x * -1})"
-    else if (dimensions.x + dimensions.width) > @svgWidth
-      attrs.transform = "translate(#{( @svgWidth - dimensions.x - dimensions.width)})"
+    # else if (dimensions.x + dimensions.width) > @options.width
+    #   attrs.transform = "translate(#{( @options.width - dimensions.x - dimensions.width)})"
 
     box = @snap.rect(dimensions.x, dimensions.y, dimensions.width, dimensions.height)
     @snap.g(box, textboxText).attr(attrs)
 
   drawLegend: ->
-    legend = @snap.g().attr('class', 'snappy-legend')
     for value, index in @areas
       yPos =  index * (@options.legendLineheight + @options.legendPadding)
       colorBox = @snap.rect(@options.size, yPos, @options.legendLineheight, @options.legendLineheight).attr({fill: @color(index)})
       text = @snap.text(@options.size + @options.legendLineheight + @options.legendPadding, yPos + @options.legendLineheight / 2, value.label || value.value).attr({style: 'alignment-baseline: middle'})
-      legend.add @snap.g(colorBox, text).attr('data-value-index': index)
+      @legend.add @snap.g(colorBox, text).attr('data-value-index': index)
 
-    legend.attr({transform: "translate(0, #{(@options.size - legend.getBBox().height) / 2 }})"})
+    @legend.attr({transform: "translate(0, #{(@options.size - @legend.getBBox().height) / 2 }})"})
 
 
   appearance: (index = 0) ->

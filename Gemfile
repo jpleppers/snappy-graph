@@ -14,3 +14,5 @@ gem 'jquery-ui-rails'
 
 gem 'konacha'
 gem 'poltergeist'
+
+gem 'faker'
